@@ -20,6 +20,17 @@ ENV DATABASE_URL="file:/tmp/placeholder.db"
 RUN npx prisma generate
 RUN npm run build
 
+# --- init db ---
+FROM base AS dbinit
+WORKDIR /app
+COPY --from=deps /app/node_modules ./node_modules
+COPY prisma ./prisma/
+COPY prisma.config.ts ./
+ENV DATABASE_URL="file:/app/data/pmo.db"
+RUN mkdir -p /app/data
+RUN npx prisma db push --skip-generate
+RUN npx tsx prisma/seed.ts
+
 # --- runner ---
 FROM base AS runner
 WORKDIR /app
@@ -35,21 +46,16 @@ COPY --from=builder /app/public ./public
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
 
-# prisma + seed deps
-COPY --from=builder /app/prisma ./prisma
-COPY --from=builder /app/prisma.config.ts ./prisma.config.ts
+# prisma client (runtime)
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
-COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
-COPY --from=builder /app/node_modules/prisma ./node_modules/prisma
-COPY --from=builder /app/node_modules/tsx ./node_modules/tsx
-COPY --from=builder /app/node_modules/bcryptjs ./node_modules/bcryptjs
-COPY --from=builder /app/node_modules/esbuild ./node_modules/esbuild
+COPY --from=builder /app/node_modules/@prisma/client ./node_modules/@prisma/client
 
-# entrypoint
+# pre-initialized database (will be copied to volume on first run)
+COPY --from=dbinit /app/data/pmo.db /app/seed.db
 COPY docker-entrypoint.sh ./docker-entrypoint.sh
 
 # data directory for SQLite
-RUN mkdir -p /app/data && chown -R nextjs:nodejs /app/data /app/prisma
+RUN mkdir -p /app/data && chown -R nextjs:nodejs /app/data /app/seed.db
 
 USER nextjs
 EXPOSE 3000
