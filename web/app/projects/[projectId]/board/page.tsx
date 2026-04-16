@@ -123,6 +123,7 @@ export default async function BoardPage({
             中添加。
           </p>
         ) : (
+          <>
           <DragSortableBoard
             projectId={projectId}
             phase="ACTIVE"
@@ -276,6 +277,7 @@ export default async function BoardPage({
             ))}
             </div>
           </details>
+          </>
         )}
       </main>
     </>
