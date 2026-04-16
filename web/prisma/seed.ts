@@ -4,7 +4,7 @@ import bcrypt from "bcryptjs";
 const prisma = new PrismaClient();
 
 async function main() {
-  // 升级前若库内仍为旧枚举 USER，会导致 Prisma 读用户时报错
+  // 升级前若库内仍为旧枚举值，统一修正
   await prisma.$executeRawUnsafe(
     `UPDATE User SET globalRole = 'DEVELOPER' WHERE globalRole = 'USER'`,
   );

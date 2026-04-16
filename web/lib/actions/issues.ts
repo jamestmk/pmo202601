@@ -6,7 +6,6 @@ import { prisma } from "@/lib/prisma";
 import {
   requireUser,
   requireProjectAccess,
-  canTransitionIssue,
 } from "@/lib/access";
 import { createOperationLog } from "@/lib/operation-log";
 import { parseCardColor, parsePriorityValue } from "@/lib/priority";
@@ -168,12 +167,7 @@ export async function advanceWorkflow(issueId: string, nextAssigneeId: string) {
       return { error: "仅研发中的需求可流转" };
     }
 
-    const { user, member } = await requireProjectAccess(issue.projectId);
-    if (
-      !canTransitionIssue(user.globalRole, member, issue.assigneeId, user.id)
-    ) {
-      return { error: "仅当前承接人或项目经理可流转" };
-    }
+    const { user } = await requireProjectAccess(issue.projectId);
 
     const statuses = await prisma.workflowStatus.findMany({
       where: { projectId: issue.projectId },

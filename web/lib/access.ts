@@ -34,25 +34,24 @@ export async function requireProjectAccess(projectId: string) {
   return { user, member };
 }
 
+/** V2: 任何项目成员都可以配置研发状态 */
 export function canManageWorkflow(
   globalRole: GlobalRole,
   member: { role: ProjectRole } | null,
 ) {
   if (isPlatformAdmin(globalRole)) return true;
-  if (!member) return false;
-  return (
-    member.role === "PM" || globalRole === "PROJECT_MANAGER"
-  );
+  // 任何项目成员都可以配置
+  return !!member;
 }
 
+/** V2: 任何项目成员都可以流转需求状态 */
 export function canTransitionIssue(
   globalRole: GlobalRole,
   member: { role: ProjectRole } | null,
-  assigneeId: string | null,
-  userId: string,
+  _assigneeId: string | null,
+  _userId: string,
 ) {
   if (isPlatformAdmin(globalRole)) return true;
-  if (member?.role === "PM") return true;
-  if (member && globalRole === "PROJECT_MANAGER") return true;
-  return assigneeId === userId;
+  // 任何项目成员都可以流转
+  return !!member;
 }

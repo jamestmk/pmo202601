@@ -7,7 +7,6 @@ import { Flash } from "@/components/Flash";
 import { Toast } from "@/components/Toast";
 import {
   getMembership,
-  canTransitionIssue,
 } from "@/lib/access";
 import { DragSortableBoard } from "@/components/DragSortableBoard";
 import {
@@ -98,7 +97,7 @@ export default async function BoardPage({
             </p>
             <h1 className="mt-1 text-2xl font-semibold text-zinc-900">研发看板</h1>
             <p className="mt-1 text-sm text-zinc-500">
-              当前承接人或 PM 可流转到下一列，并指定下一承接人
+              项目成员可流转到下一列，并指定下一承接人
               {project.owner ? ` · 项目负责人：${project.owner.name || project.owner.email}` : ""}
             </p>
           </div>
@@ -159,12 +158,7 @@ export default async function BoardPage({
                   {(byStatus.get(s.id) ?? []).map((issue) => {
                     const canMove =
                       !isLast(s.id) &&
-                      canTransitionIssue(
-                        user.globalRole,
-                        member,
-                        issue.assigneeId,
-                        user.id,
-                      );
+                      (user.globalRole === "ADMIN" || !!member);
                     return (
                       <li
                         key={issue.id}
@@ -271,7 +265,7 @@ export default async function BoardPage({
                           <p className="mt-3 border-t border-black/5 pt-3 text-xs text-zinc-400">已至末列</p>
                         ) : (
                           <p className="mt-3 border-t border-black/5 pt-3 text-xs text-zinc-400">
-                            仅当前承接人或 PM 可流转
+                            无流转权限
                           </p>
                         )}
                       </li>

@@ -3,8 +3,9 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { requireAdmin, requireProjectAccess, canManageWorkflow } from "@/lib/access";
+import { requireUser, requireAdmin, requireProjectAccess, canManageWorkflow } from "@/lib/access";
 import { createOperationLog } from "@/lib/operation-log";
+import { isPlatformAdmin } from "@/lib/platform-role";
 
 function withMsg(path: string, key: "ok" | "err", message: string) {
   return `${path}${path.includes("?") ? "&" : "?"}${key}=${encodeURIComponent(message)}`;
@@ -12,15 +13,15 @@ function withMsg(path: string, key: "ok" | "err", message: string) {
 
 export async function createProject(formData: FormData) {
   try {
-    const user = await requireAdmin();
+    const user = await requireUser();
     const name = String(formData.get("name") ?? "").trim();
     if (!name) return { error: "请填写项目名称" };
     const description =
       String(formData.get("description") ?? "").trim() || null;
     const ownerIdRaw = String(formData.get("ownerId") ?? "").trim();
-    const ownerId = ownerIdRaw || null;
+    const ownerId = ownerIdRaw || user.id;
 
-    if (ownerId) {
+    if (ownerId !== user.id) {
       const ownerExists = await prisma.user.findUnique({ where: { id: ownerId } });
       if (!ownerExists) return { error: "所选负责人不存在" };
     }
@@ -28,6 +29,13 @@ export async function createProject(formData: FormData) {
     const project = await prisma.project.create({
       data: { name, description, ownerId },
       include: { owner: true },
+    });
+
+    // 创建者自动成为项目 PM
+    await prisma.projectMember.upsert({
+      where: { projectId_userId: { projectId: project.id, userId: user.id } },
+      update: { role: "PM" },
+      create: { projectId: project.id, userId: user.id, role: "PM" },
     });
 
     await createOperationLog({
@@ -94,7 +102,13 @@ export async function addProjectMember(
   role: "MEMBER" | "PM",
 ) {
   try {
-    const user = await requireAdmin();
+    const { user, member } = await requireProjectAccess(projectId);
+    // 项目 PM 或管理员可以添加成员
+    const isAdmin = isPlatformAdmin(user.globalRole);
+    const isPM = member?.role === "PM";
+    if (!isAdmin && !isPM) {
+      return { error: "仅项目经理或管理员可添加成员" };
+    }
     const targetUser = await prisma.user.findUnique({ where: { id: userId } });
     const project = await prisma.project.findUnique({ where: { id: projectId } });
     if (!targetUser || !project) return { error: "项目或用户不存在" };

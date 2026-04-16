@@ -5,7 +5,8 @@ import { prisma } from "@/lib/prisma";
 import { Nav } from "@/components/Nav";
 import { Flash } from "@/components/Flash";
 import { Toast } from "@/components/Toast";
-import { getMembership, canManageWorkflow } from "@/lib/access";
+import { getMembership } from "@/lib/access";
+import { isPlatformAdmin } from "@/lib/platform-role";
 import {
   addWorkflowStatusForm,
   deleteWorkflowStatusForm,
@@ -29,19 +30,18 @@ export default async function SettingsPage({
   const { err, ok } = await searchParams;
 
   const user = session.user;
+  const isAdmin = isPlatformAdmin(user.globalRole);
   const project = await prisma.project.findUnique({
     where: { id: projectId },
     include: { owner: true },
   });
   if (!project) notFound();
 
-  const member =
-    user.globalRole === "ADMIN"
-      ? null
-      : await getMembership(projectId, user.id);
-  if (user.globalRole !== "ADMIN" && !member) notFound();
+  const member = isAdmin ? null : await getMembership(projectId, user.id);
+  if (!isAdmin && !member) notFound();
 
-  const canWorkflow = canManageWorkflow(user.globalRole, member);
+  // PM 或管理员可以管理成员
+  const canManageMembers = isAdmin || member?.role === "PM";
 
   const [statuses, members, allUsers] = await Promise.all([
     prisma.workflowStatus.findMany({
@@ -53,7 +53,7 @@ export default async function SettingsPage({
       include: { user: true },
       orderBy: { user: { email: "asc" } },
     }),
-    user.globalRole === "ADMIN"
+    canManageMembers
       ? prisma.user.findMany({ orderBy: { email: "asc" } })
       : Promise.resolve([] as Awaited<ReturnType<typeof prisma.user.findMany>>),
   ]);
@@ -77,7 +77,7 @@ export default async function SettingsPage({
 
         <Flash message={err} />
 
-        {user.globalRole === "ADMIN" ? (
+        {isAdmin ? (
           <section className="mt-8 rounded-xl border border-zinc-200 bg-white p-5 shadow-sm">
             <h2 className="text-sm font-medium text-zinc-900">项目 owner</h2>
             <p className="mt-1 text-xs text-zinc-500">
@@ -117,30 +117,26 @@ export default async function SettingsPage({
           <p className="mt-1 text-xs text-zinc-500">
             需求池转入开发会落到名为「开发中」的列；请确保存在该名称。
           </p>
-          {canWorkflow ? (
-            <form
-              action={addWorkflowStatusForm.bind(null, projectId)}
-              className="mt-4 flex flex-wrap items-end gap-2"
+          <form
+            action={addWorkflowStatusForm.bind(null, projectId)}
+            className="mt-4 flex flex-wrap items-end gap-2"
+          >
+            <label className="flex flex-col gap-1 text-sm">
+              <span className="text-zinc-600">新状态名称</span>
+              <input
+                name="name"
+                required
+                placeholder="例如：测试中"
+                className="rounded-md border border-zinc-300 px-3 py-2"
+              />
+            </label>
+            <button
+              type="submit"
+              className="rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800"
             >
-              <label className="flex flex-col gap-1 text-sm">
-                <span className="text-zinc-600">新状态名称</span>
-                <input
-                  name="name"
-                  required
-                  placeholder="例如：测试中"
-                  className="rounded-md border border-zinc-300 px-3 py-2"
-                />
-              </label>
-              <button
-                type="submit"
-                className="rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800"
-              >
-                添加
-              </button>
-            </form>
-          ) : (
-            <p className="mt-4 text-sm text-zinc-500">仅项目经理或管理员可编辑。</p>
-          )}
+              添加
+            </button>
+          </form>
 
           <ul className="mt-6 divide-y divide-zinc-100 border-t border-zinc-100">
             {statuses.map((s, i) => (
@@ -152,22 +148,20 @@ export default async function SettingsPage({
                   <span className="text-zinc-400">{i + 1}.</span>{" "}
                   <span className="font-medium text-zinc-900">{s.name}</span>
                 </span>
-                {canWorkflow ? (
-                  <form action={deleteWorkflowStatusForm.bind(null, s.id)}>
-                    <button
-                      type="submit"
-                      className="text-xs text-red-600 hover:underline"
-                    >
-                      删除
-                    </button>
-                  </form>
-                ) : null}
+                <form action={deleteWorkflowStatusForm.bind(null, s.id)}>
+                  <button
+                    type="submit"
+                    className="text-xs text-red-600 hover:underline"
+                  >
+                    删除
+                  </button>
+                </form>
               </li>
             ))}
           </ul>
         </section>
 
-        {user.globalRole === "ADMIN" ? (
+        {canManageMembers ? (
           <section className="mt-8 rounded-xl border border-zinc-200 bg-white p-5 shadow-sm">
             <h2 className="text-sm font-medium text-zinc-900">项目成员</h2>
             <form
@@ -220,7 +214,21 @@ export default async function SettingsPage({
               ))}
             </ul>
           </section>
-        ) : null}
+        ) : (
+          <section className="mt-8 rounded-xl border border-zinc-200 bg-white p-5 shadow-sm">
+            <h2 className="text-sm font-medium text-zinc-900">项目成员</h2>
+            <ul className="mt-4 text-sm text-zinc-700">
+              {members.map((m) => (
+                <li key={m.userId} className="border-t border-zinc-100 py-2">
+                  {m.user.name || m.user.email}
+                  <span className="ml-2 text-xs text-zinc-500">
+                    {m.role === "PM" ? "项目经理" : "成员"}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
       </main>
     </>
   );

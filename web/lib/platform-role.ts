@@ -2,6 +2,8 @@ import type { GlobalRole } from "@prisma/client";
 
 /** 平台身份（与 Prisma `GlobalRole` 一致） */
 export const PLATFORM_ROLE_ORDER: GlobalRole[] = [
+  "ANNOTATOR",
+  "ANNOTATOR_LEAD",
   "DEVELOPER",
   "TESTER",
   "PROJECT_MANAGER",
@@ -10,6 +12,8 @@ export const PLATFORM_ROLE_ORDER: GlobalRole[] = [
 ];
 
 export const PLATFORM_ROLE_LABEL: Record<GlobalRole, string> = {
+  ANNOTATOR: "数据标注员",
+  ANNOTATOR_LEAD: "数据标注组长",
   DEVELOPER: "开发",
   TESTER: "测试",
   PROJECT_MANAGER: "项目经理",
@@ -23,6 +27,15 @@ export function platformRoleLabel(role: GlobalRole) {
 
 export function isPlatformAdmin(role: GlobalRole | undefined) {
   return role === "ADMIN";
+}
+
+/** 可查看薪资数据的角色（自己的 + 管辖范围的） */
+export function canViewSalary(role: GlobalRole | undefined) {
+  return (
+    role === "ADMIN" ||
+    role === "PROJECT_MANAGER" ||
+    role === "ANNOTATOR_LEAD"
+  );
 }
 
 const ROLE_SET = new Set<string>(PLATFORM_ROLE_ORDER);

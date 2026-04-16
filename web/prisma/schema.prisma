@@ -12,6 +12,8 @@ enum GlobalRole {
   TESTER
   PROJECT_MANAGER
   PRODUCT_MANAGER
+  ANNOTATOR
+  ANNOTATOR_LEAD
   ADMIN
 }
 
@@ -31,6 +33,27 @@ enum IssuePhase {
   CLOSED
 }
 
+enum SalaryStatus {
+  PENDING
+  CONFIRMED
+  PAID
+}
+
+enum IssueCategory {
+  FEATURE
+  BUG
+  IMPROVEMENT
+  ANNOTATION
+  TECH_DEBT
+  OTHER
+}
+
+enum IssueComplexity {
+  SIMPLE
+  MEDIUM
+  COMPLEX
+}
+
 model User {
   id             String          @id @default(cuid())
   email          String          @unique
@@ -43,6 +66,7 @@ model User {
   issuesReported Issue[]         @relation("Requester")
   issuesAssigned Issue[]         @relation("Assignee")
   operationLogs  OperationLog[]
+  salaryRecords  SalaryRecord[]  @relation("SalaryRecipient")
 }
 
 model Project {
@@ -60,6 +84,7 @@ model Project {
   statuses      WorkflowStatus[]
   issues        Issue[]
   operationLogs OperationLog[]
+  salaryRecords SalaryRecord[]
 }
 
 model ProjectMember {
@@ -100,6 +125,11 @@ model Issue {
   dueDate          DateTime?
   tags             String?
   closeReason      String?
+  /// AI 归类相关
+  category         IssueCategory?
+  module           String?
+  complexity       IssueComplexity?
+  aiClassified     Boolean  @default(false)
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 
@@ -125,4 +155,24 @@ model OperationLog {
   @@index([createdAt])
   @@index([actorUserId, createdAt])
   @@index([projectId, createdAt])
+}
+
+model SalaryRecord {
+  id          String       @id @default(cuid())
+  projectId   String?
+  recipientId String
+  amount      Float
+  currency    String       @default("CNY")
+  period      String?
+  note        String?
+  status      SalaryStatus @default(PENDING)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  project   Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  recipient User     @relation("SalaryRecipient", fields: [recipientId], references: [id], onDelete: Cascade)
+
+  @@index([recipientId])
+  @@index([projectId])
+  @@index([status])
 }

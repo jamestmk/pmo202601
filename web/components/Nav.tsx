@@ -22,6 +22,9 @@ export async function Nav() {
           <Link href="/projects" className="hover:text-zinc-900">
             项目
           </Link>
+          <Link href="/salary" className="hover:text-zinc-900">
+            薪资
+          </Link>
           {isPlatformAdmin(u.globalRole) ? (
             <>
               <Link href="/admin/users" className="hover:text-zinc-900">
