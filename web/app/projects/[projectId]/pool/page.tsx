@@ -8,10 +8,7 @@ import { Toast } from "@/components/Toast";
 import { getMembership } from "@/lib/access";
 import { IssueCard } from "@/components/IssueCard";
 import { PoolIssueActions } from "@/components/PoolIssueActions";
-import {
-  CARD_COLOR_OPTIONS,
-  PRIORITY_LABELS,
-} from "@/lib/priority";
+import { CreateIssueForm } from "@/components/CreateIssueForm";
 import {
   createPoolIssueAndRedirect,
 } from "@/lib/actions/issues";
@@ -102,59 +99,12 @@ export default async function PoolPage({
 
         <Flash message={err} />
 
-        {/* 新增需求表单 - 简化版 */}
+        {/* 新增需求表单 */}
         <section className="mt-8 rounded-lg border border-zinc-200 bg-white p-6">
           <h2 className="mb-4 text-base font-medium text-zinc-900">快速新增需求</h2>
-          <form
+          <CreateIssueForm
             action={createPoolIssueAndRedirect.bind(null, projectId)}
-            className="space-y-3"
-            id="create-issue-form"
-          >
-            <div className="flex flex-wrap gap-3">
-              <input
-                name="title"
-                required
-                placeholder="需求标题"
-                className="flex-1 rounded-md border border-zinc-300 px-3 py-2 text-sm"
-              />
-              <select
-                name="priority"
-                defaultValue={2}
-                className="rounded-md border border-zinc-300 px-3 py-2 text-sm"
-              >
-                {PRIORITY_LABELS.map((label, i) => (
-                  <option key={label} value={i}>
-                    {label}
-                  </option>
-                ))}
-              </select>
-              <select
-                name="cardColor"
-                defaultValue="slate"
-                className="rounded-md border border-zinc-300 px-3 py-2 text-sm"
-              >
-                {CARD_COLOR_OPTIONS.map((color) => (
-                  <option key={color} value={color}>{color}</option>
-                ))}
-              </select>
-              <label className="flex items-center gap-2 text-sm text-zinc-700">
-                <input type="checkbox" name="isFlagged" className="size-4 rounded border-zinc-300" />
-                <span>旗标</span>
-              </label>
-              <button
-                type="submit"
-                className="rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800"
-              >
-                添加到需求池
-              </button>
-            </div>
-            <textarea
-              name="description"
-              placeholder="需求描述（可选）"
-              rows={2}
-              className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm"
-            />
-          </form>
+          />
         </section>
 
         {/* 需求列表 */}

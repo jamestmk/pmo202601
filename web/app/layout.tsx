@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { Providers } from "./providers";
+import { ChatBot } from "@/components/ChatBot";
 
 export const metadata: Metadata = {
   title: "小型项目管理",
@@ -15,7 +16,10 @@ export default function RootLayout({
   return (
     <html lang="zh-CN" className="h-full antialiased">
       <body className="min-h-full flex flex-col bg-zinc-50 font-sans text-zinc-900">
-        <Providers>{children}</Providers>
+        <Providers>
+          {children}
+          <ChatBot />
+        </Providers>
       </body>
     </html>
   );

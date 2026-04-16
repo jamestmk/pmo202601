@@ -9,6 +9,20 @@ import {
 } from "@/lib/access";
 import { createOperationLog } from "@/lib/operation-log";
 import { parseCardColor, parsePriorityValue } from "@/lib/priority";
+import type { IssueCategory, IssueComplexity } from "@prisma/client";
+
+const VALID_CATEGORIES: IssueCategory[] = ["FEATURE", "BUG", "IMPROVEMENT", "ANNOTATION", "TECH_DEBT", "OTHER"];
+const VALID_COMPLEXITIES: IssueComplexity[] = ["SIMPLE", "MEDIUM", "COMPLEX"];
+
+function parseCategory(raw: FormDataEntryValue | null): IssueCategory | null {
+  const v = String(raw ?? "").trim();
+  return VALID_CATEGORIES.includes(v as IssueCategory) ? (v as IssueCategory) : null;
+}
+
+function parseComplexity(raw: FormDataEntryValue | null): IssueComplexity | null {
+  const v = String(raw ?? "").trim();
+  return VALID_COMPLEXITIES.includes(v as IssueComplexity) ? (v as IssueComplexity) : null;
+}
 
 async function nextSortOrder(projectId: string, phase: "BACKLOG" | "ACTIVE", workflowStatusId?: string | null) {
   const row = await prisma.issue.aggregate({
@@ -51,6 +65,10 @@ export async function createPoolIssue(projectId: string, formData: FormData) {
         phase: "BACKLOG",
         sortOrder: await nextSortOrder(projectId, "BACKLOG"),
         requesterId: user.id,
+        category: parseCategory(formData.get("category")),
+        module: String(formData.get("module") ?? "").trim() || null,
+        complexity: parseComplexity(formData.get("complexity")),
+        aiClassified: String(formData.get("aiClassified") ?? "") === "on",
       },
     });
 
