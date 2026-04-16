@@ -19,8 +19,8 @@ interface IssueActionModalProps {
     role: string;
   }>;
   onPromote: (issueId: string, assigneeId: string) => void;
-  onClose: (issueId: string, reason: string) => void;
-  onUpdatePresentation: (issueId: string, data: any) => void;
+  onCloseIssue: (issueId: string, reason: string) => void;
+  onUpdatePresentation: (issueId: string, data: Record<string, unknown>) => void;
 }
 
 export function IssueActionModal({
