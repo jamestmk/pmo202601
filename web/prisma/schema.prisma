@@ -1,0 +1,128 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum GlobalRole {
+  DEVELOPER
+  TESTER
+  PROJECT_MANAGER
+  PRODUCT_MANAGER
+  ADMIN
+}
+
+enum ProjectStatus {
+  ACTIVE
+  ARCHIVED
+}
+
+enum ProjectRole {
+  MEMBER
+  PM
+}
+
+enum IssuePhase {
+  BACKLOG
+  ACTIVE
+  CLOSED
+}
+
+model User {
+  id             String          @id @default(cuid())
+  email          String          @unique
+  passwordHash   String
+  name           String?
+  globalRole     GlobalRole      @default(DEVELOPER)
+  createdAt      DateTime        @default(now())
+  memberships    ProjectMember[]
+  ownedProjects  Project[]       @relation("ProjectOwner")
+  issuesReported Issue[]         @relation("Requester")
+  issuesAssigned Issue[]         @relation("Assignee")
+  operationLogs  OperationLog[]
+}
+
+model Project {
+  id            String          @id @default(cuid())
+  name          String
+  description   String?
+  ownerId       String?
+  status        ProjectStatus   @default(ACTIVE)
+  /// JSON array of {label, color} objects
+  tags          String?
+  labelColor    String?
+  createdAt     DateTime        @default(now())
+  owner         User?           @relation("ProjectOwner", fields: [ownerId], references: [id], onDelete: SetNull)
+  members       ProjectMember[]
+  statuses      WorkflowStatus[]
+  issues        Issue[]
+  operationLogs OperationLog[]
+}
+
+model ProjectMember {
+  projectId String
+  userId    String
+  role      ProjectRole @default(MEMBER)
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([projectId, userId])
+}
+
+model WorkflowStatus {
+  id        String  @id @default(cuid())
+  projectId String
+  name      String
+  sortOrder Int
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  issues    Issue[]
+
+  @@unique([projectId, name])
+}
+
+model Issue {
+  id               String   @id @default(cuid())
+  projectId        String
+  title            String
+  description      String?
+  /// 0=P0 … 3=P3，数字越小越紧急
+  priority         Int      @default(2)
+  phase            IssuePhase @default(BACKLOG)
+  workflowStatusId String?
+  assigneeId       String?
+  requesterId      String
+  isFlagged        Boolean  @default(false)
+  cardColor        String   @default("slate")
+  sortOrder        Int      @default(0)
+  dueDate          DateTime?
+  tags             String?
+  closeReason      String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  project        Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  workflowStatus WorkflowStatus? @relation(fields: [workflowStatusId], references: [id])
+  assignee       User?           @relation("Assignee", fields: [assigneeId], references: [id])
+  requester      User            @relation("Requester", fields: [requesterId], references: [id])
+}
+
+model OperationLog {
+  id          String   @id @default(cuid())
+  actorUserId String
+  projectId   String?
+  action      String
+  targetType  String
+  targetId    String?
+  summary     String
+  createdAt   DateTime @default(now())
+
+  actor   User     @relation(fields: [actorUserId], references: [id], onDelete: Cascade)
+  project Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
+
+  @@index([createdAt])
+  @@index([actorUserId, createdAt])
+  @@index([projectId, createdAt])
+}
