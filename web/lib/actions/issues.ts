@@ -393,7 +393,7 @@ export async function createPoolIssueAndRedirect(
   if ("error" in r && r.error) {
     redirect(withMsg(`/projects/${projectId}/pool`, "err", r.error));
   }
-  redirect(withMsg(`/projects/${projectId}/pool`, "ok", r.message));
+  redirect(withMsg(`/projects/${projectId}/pool`, "ok", r.message!));
 }
 
 export async function closePoolIssueForm(issueId: string, formData: FormData) {
@@ -404,7 +404,7 @@ export async function closePoolIssueForm(issueId: string, formData: FormData) {
   if ("error" in r && r.error) {
     redirect(withMsg(`/projects/${pid}/pool`, "err", r.error));
   }
-  redirect(withMsg(`/projects/${pid}/pool`, "ok", r.message));
+  redirect(withMsg(`/projects/${pid}/pool`, "ok", r.message!));
 }
 
 export async function promoteFromForm(issueId: string, formData: FormData) {
@@ -415,7 +415,7 @@ export async function promoteFromForm(issueId: string, formData: FormData) {
   if ("error" in r && r.error) {
     redirect(withMsg(`/projects/${pid}/pool`, "err", r.error));
   }
-  redirect(withMsg(`/projects/${pid}/pool`, "ok", r.message));
+  redirect(withMsg(`/projects/${pid}/pool`, "ok", r.message!));
 }
 
 export async function advanceFromForm(issueId: string, formData: FormData) {
@@ -426,7 +426,7 @@ export async function advanceFromForm(issueId: string, formData: FormData) {
   if ("error" in r && r.error) {
     redirect(withMsg(`/projects/${pid}/board`, "err", r.error));
   }
-  redirect(withMsg(`/projects/${pid}/board`, "ok", r.message));
+  redirect(withMsg(`/projects/${pid}/board`, "ok", r.message!));
 }
 
 export async function moveIssueForm(issueId: string, formData: FormData) {
@@ -439,7 +439,7 @@ export async function moveIssueForm(issueId: string, formData: FormData) {
   if ("error" in r && r.error) {
     redirect(withMsg(`/projects/${pid}/${page}`, "err", r.error));
   }
-  redirect(withMsg(`/projects/${pid}/${page}`, "ok", r.message));
+  redirect(withMsg(`/projects/${pid}/${page}`, "ok", r.message!));
 }
 
 export async function updateIssueForm(issueId: string, formData: FormData) {
@@ -450,7 +450,7 @@ export async function updateIssueForm(issueId: string, formData: FormData) {
   if ("error" in r && r.error) {
     redirect(withMsg(`/projects/${pid}/issues/${issueId}/edit`, "err", r.error));
   }
-  redirect(withMsg(`/projects/${pid}/${page}`, "ok", r.message));
+  redirect(withMsg(`/projects/${pid}/${page}`, "ok", r.message!));
 }
 
 export async function updateIssuePresentationForm(issueId: string, formData: FormData) {
@@ -461,5 +461,5 @@ export async function updateIssuePresentationForm(issueId: string, formData: For
   if ("error" in r && r.error) {
     redirect(withMsg(`/projects/${pid}/${phase === "ACTIVE" ? "board" : "pool"}`, "err", r.error));
   }
-  redirect(withMsg(`/projects/${pid}/${phase === "ACTIVE" ? "board" : "pool"}`, "ok", r.message));
+  redirect(withMsg(`/projects/${pid}/${phase === "ACTIVE" ? "board" : "pool"}`, "ok", r.message!));
 }

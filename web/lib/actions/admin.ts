@@ -59,7 +59,7 @@ export async function createUserForm(formData: FormData) {
   if ("error" in r && r.error) {
     redirect(withMsg("/admin/users", "err", r.error));
   }
-  redirect(withMsg("/admin/users", "ok", r.message));
+  redirect(withMsg("/admin/users", "ok", r.message!));
 }
 
 export async function updateUserGlobalRole(
@@ -117,5 +117,5 @@ export async function updateUserGlobalRoleForm(
   if ("error" in r && r.error) {
     redirect(withMsg("/admin/users", "err", r.error));
   }
-  redirect(withMsg("/admin/users", "ok", r.message));
+  redirect(withMsg("/admin/users", "ok", r.message!));
 }

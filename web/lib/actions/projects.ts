@@ -213,7 +213,7 @@ export async function createProjectForm(formData: FormData) {
   if ("error" in r && r.error) {
     redirect(withMsg("/projects", "err", r.error));
   }
-  redirect(withMsg("/projects", "ok", r.message));
+  redirect(withMsg("/projects", "ok", r.message!));
 }
 
 export async function updateProjectOwnerForm(projectId: string, formData: FormData) {
@@ -222,7 +222,7 @@ export async function updateProjectOwnerForm(projectId: string, formData: FormDa
   if ("error" in r && r.error) {
     redirect(withMsg(`/projects/${projectId}/settings`, "err", r.error));
   }
-  redirect(withMsg(`/projects/${projectId}/settings`, "ok", r.message));
+  redirect(withMsg(`/projects/${projectId}/settings`, "ok", r.message!));
 }
 
 export async function addWorkflowStatusForm(
@@ -234,7 +234,7 @@ export async function addWorkflowStatusForm(
   if ("error" in r && r.error) {
     redirect(withMsg(`/projects/${projectId}/settings`, "err", r.error));
   }
-  redirect(withMsg(`/projects/${projectId}/settings`, "ok", r.message));
+  redirect(withMsg(`/projects/${projectId}/settings`, "ok", r.message!));
 }
 
 export async function deleteWorkflowStatusForm(statusId: string) {
@@ -246,7 +246,7 @@ export async function deleteWorkflowStatusForm(statusId: string) {
   if ("error" in r && r.error) {
     redirect(withMsg(`/projects/${pid}/settings`, "err", r.error));
   }
-  redirect(withMsg(`/projects/${pid}/settings`, "ok", r.message));
+  redirect(withMsg(`/projects/${pid}/settings`, "ok", r.message!));
 }
 
 export async function updateProjectTags(projectId: string, tags: { label: string; color: string }[], labelColor: string | null) {
@@ -270,5 +270,5 @@ export async function addProjectMemberForm(projectId: string, formData: FormData
   if ("error" in r && r.error) {
     redirect(withMsg(`/projects/${projectId}/settings`, "err", r.error));
   }
-  redirect(withMsg(`/projects/${projectId}/settings`, "ok", r.message));
+  redirect(withMsg(`/projects/${projectId}/settings`, "ok", r.message!));
 }

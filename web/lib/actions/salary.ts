@@ -102,7 +102,7 @@ export async function createSalaryRecordForm(formData: FormData) {
   if ("error" in r && r.error) {
     redirect(withMsg("/salary", "err", r.error));
   }
-  redirect(withMsg("/salary", "ok", r.message));
+  redirect(withMsg("/salary", "ok", r.message!));
 }
 
 export async function confirmSalaryForm(recordId: string) {
@@ -110,7 +110,7 @@ export async function confirmSalaryForm(recordId: string) {
   if ("error" in r && r.error) {
     redirect(withMsg("/salary", "err", r.error));
   }
-  redirect(withMsg("/salary", "ok", r.message));
+  redirect(withMsg("/salary", "ok", r.message!));
 }
 
 export async function markSalaryPaidForm(recordId: string) {
@@ -118,5 +118,5 @@ export async function markSalaryPaidForm(recordId: string) {
   if ("error" in r && r.error) {
     redirect(withMsg("/salary", "err", r.error));
   }
-  redirect(withMsg("/salary", "ok", r.message));
+  redirect(withMsg("/salary", "ok", r.message!));
 }
