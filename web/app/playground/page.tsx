@@ -95,7 +95,7 @@ export default function PlaygroundPage() {
               <span className="text-sm text-zinc-700">
                 当前：<span className="font-medium">{currentUser.name || currentEmail}</span>
                 <span className="ml-1 rounded bg-zinc-100 px-1.5 py-0.5 text-xs text-zinc-500">
-                  {ROLE_LABEL[(currentUser as Record<string, unknown>).globalRole as string] ?? ""}
+                  {ROLE_LABEL[(currentUser as unknown as Record<string, string>).globalRole] ?? ""}
                 </span>
               </span>
             </>
