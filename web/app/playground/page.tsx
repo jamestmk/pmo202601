@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { signIn, signOut, useSession } from "next-auth/react";
+import { useState, useEffect } from "react";
+import { useSession } from "next-auth/react";
 
 const TEST_USERS = [
   { email: "admin@local.test", password: "admin123", name: "老板（管理员）", role: "ADMIN", color: "bg-red-500" },
@@ -29,35 +29,49 @@ const PAGES = [
   { label: "项目列表", path: "/projects" },
   { label: "薪资", path: "/salary" },
   { label: "用户管理", path: "/admin/users" },
-  { label: "操作记录", path: "/admin/logs" },
 ];
 
 export default function PlaygroundPage() {
   const { data: session, status } = useSession();
-  const [switching, setSwitching] = useState(false);
   const [iframeSrc, setIframeSrc] = useState("/");
-  const basePath = process.env.NEXT_PUBLIC_BASE_PATH || "/pmo2026";
+  const [csrfToken, setCsrfToken] = useState("");
+  const [switching, setSwitching] = useState(false);
+  const basePath = process.env.NEXT_PUBLIC_BASE_PATH || "";
 
   const currentUser = session?.user;
   const currentEmail = currentUser?.email;
 
-  async function switchTo(email: string, password: string) {
-    setSwitching(true);
-    try {
-      await signIn("credentials", {
-        email,
-        password,
-        redirect: false,
-      });
-      window.location.reload();
-    } catch {
-      setSwitching(false);
-    }
-  }
+  // Fetch CSRF token on mount
+  useEffect(() => {
+    fetch(`${basePath}/api/auth/csrf`)
+      .then((r) => r.json())
+      .then((d) => setCsrfToken(d.csrfToken || ""))
+      .catch(() => {});
+  }, [basePath]);
 
-  async function handleLogout() {
-    await signOut({ redirect: false });
-    window.location.reload();
+  async function loginAs(email: string, password: string) {
+    if (!csrfToken || switching) return;
+    setSwitching(true);
+
+    try {
+      const res = await fetch(`${basePath}/api/auth/callback/credentials`, {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams({
+          csrfToken,
+          email,
+          password,
+          callbackUrl: `${basePath}/playground`,
+          json: "true",
+        }),
+        redirect: "follow",
+      });
+
+      // Regardless of response, reload to pick up new session
+      window.location.href = `${basePath}/playground`;
+    } catch {
+      window.location.href = `${basePath}/playground`;
+    }
   }
 
   if (status === "loading") {
@@ -68,84 +82,55 @@ export default function PlaygroundPage() {
     );
   }
 
-  if (!currentUser) {
-    return (
-      <div className="flex min-h-screen flex-col items-center justify-center gap-6 bg-zinc-100 px-4">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-zinc-900">PMO 角色体验测试台</h1>
-          <p className="mt-2 text-sm text-zinc-500">选择一个角色快速登录，体验不同视角</p>
-        </div>
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          {TEST_USERS.map((u) => (
-            <button
-              key={u.email}
-              onClick={() => switchTo(u.email, u.password)}
-              disabled={switching}
-              className="flex items-center gap-3 rounded-xl border border-zinc-200 bg-white px-4 py-3 shadow-sm transition hover:border-zinc-300 hover:shadow-md disabled:opacity-50"
-            >
-              <span className={`size-3 rounded-full ${u.color}`} />
-              <div className="text-left">
-                <p className="text-sm font-medium text-zinc-900">{u.name}</p>
-                <p className="text-xs text-zinc-500">{ROLE_LABEL[u.role]}</p>
-              </div>
-            </button>
-          ))}
-        </div>
-      </div>
-    );
-  }
-
-  const activeUser = TEST_USERS.find((u) => u.email === currentEmail);
-
   return (
     <div className="flex h-screen flex-col bg-zinc-100">
       {/* 顶部控制栏 */}
-      <div className="shrink-0 border-b border-zinc-300 bg-white px-4 py-2">
-        <div className="flex flex-wrap items-center gap-3">
+      <div className="shrink-0 border-b border-zinc-300 bg-white px-4 py-3">
+        <div className="flex flex-wrap items-center gap-2">
           <h1 className="text-sm font-bold text-zinc-900">🧪 角色体验测试台</h1>
-          <span className="text-xs text-zinc-400">|</span>
 
-          {/* 当前用户 */}
-          <div className="flex items-center gap-2">
-            <span className={`size-2.5 rounded-full ${activeUser?.color ?? "bg-zinc-400"}`} />
-            <span className="text-sm font-medium text-zinc-900">
-              {currentUser.name || currentEmail}
-            </span>
-            <span className="rounded-full bg-zinc-100 px-2 py-0.5 text-xs text-zinc-600">
-              {ROLE_LABEL[(currentUser as any).globalRole] ?? "未知"}
-            </span>
-          </div>
-
-          <span className="text-xs text-zinc-400">|</span>
-
-          {/* 快速切换 */}
-          <div className="flex flex-wrap gap-1">
-            {TEST_USERS.map((u) => (
-              <button
-                key={u.email}
-                onClick={() => switchTo(u.email, u.password)}
-                disabled={switching || u.email === currentEmail}
-                className={`rounded-md px-2 py-1 text-xs transition ${
-                  u.email === currentEmail
-                    ? "bg-zinc-900 text-white"
-                    : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200"
-                } disabled:opacity-50`}
-                title={`${u.name} (${ROLE_LABEL[u.role]})`}
-              >
-                {u.name.slice(0, 3)}
-              </button>
-            ))}
-          </div>
+          {currentUser ? (
+            <>
+              <span className="text-xs text-zinc-400">|</span>
+              <span className="text-sm text-zinc-700">
+                当前：<span className="font-medium">{currentUser.name || currentEmail}</span>
+                <span className="ml-1 rounded bg-zinc-100 px-1.5 py-0.5 text-xs text-zinc-500">
+                  {ROLE_LABEL[(currentUser as Record<string, unknown>).globalRole as string] ?? ""}
+                </span>
+              </span>
+            </>
+          ) : null}
 
           <span className="text-xs text-zinc-400">|</span>
+          <span className="text-xs text-zinc-500">切换角色：</span>
 
-          {/* 页面导航 */}
-          <div className="flex flex-wrap gap-1">
+          {TEST_USERS.map((u) => (
+            <button
+              key={u.email}
+              onClick={() => loginAs(u.email, u.password)}
+              disabled={switching}
+              className={`flex items-center gap-1.5 rounded-md px-2 py-1 text-xs transition ${
+                u.email === currentEmail
+                  ? "bg-zinc-900 text-white"
+                  : "bg-zinc-100 text-zinc-700 hover:bg-zinc-200"
+              } disabled:opacity-50`}
+            >
+              <span className={`size-2 rounded-full ${u.color}`} />
+              {u.name}
+            </button>
+          ))}
+          {switching ? <span className="text-xs text-zinc-400">切换中…</span> : null}
+        </div>
+
+        {/* 页面导航 */}
+        {currentUser ? (
+          <div className="mt-2 flex flex-wrap gap-1">
+            <span className="text-xs text-zinc-500 leading-6">查看页面：</span>
             {PAGES.map((p) => (
               <button
                 key={p.path}
                 onClick={() => setIframeSrc(p.path)}
-                className={`rounded-md px-2 py-1 text-xs ${
+                className={`rounded-md px-2.5 py-1 text-xs ${
                   iframeSrc === p.path
                     ? "bg-blue-600 text-white"
                     : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200"
@@ -155,25 +140,25 @@ export default function PlaygroundPage() {
               </button>
             ))}
           </div>
-
-          <button
-            onClick={handleLogout}
-            className="ml-auto rounded-md border border-zinc-300 px-2 py-1 text-xs text-zinc-600 hover:bg-zinc-50"
-          >
-            退出
-          </button>
-        </div>
+        ) : null}
       </div>
 
-      {/* iframe 展示区 */}
-      <div className="flex-1">
+      {/* 内容区 */}
+      {currentUser ? (
         <iframe
           key={`${currentEmail}-${iframeSrc}`}
           src={`${basePath}${iframeSrc}`}
-          className="h-full w-full border-0"
+          className="flex-1 border-0"
           title="PMO Preview"
         />
-      </div>
+      ) : (
+        <div className="flex flex-1 items-center justify-center">
+          <div className="text-center">
+            <p className="text-lg font-medium text-zinc-700">👆 点击上方任意角色按钮登录</p>
+            <p className="mt-2 text-sm text-zinc-500">登录后可在不同角色间快速切换，对比体验差异</p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
