@@ -6,6 +6,7 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 COPY prisma ./prisma/
 COPY prisma.config.ts ./
+ENV DATABASE_URL="file:/tmp/placeholder.db"
 RUN npm ci
 
 # --- build ---
